@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LIFF Form Easy</title>
+    <!-- ⚠️ จุดแก้ไขที่ 1: ลิงก์นำเข้า LIFF SDK ที่ถูกต้อง -->
+    <script charset="utf-8" src="https://line-scdn.net"></script>
+    <style>
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            background-color: #f4f7f6;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+        .form-container {
+            background-color: #ffffff;
+            max-width: 450px;
+            margin: 0 auto;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+        .profile-section {
+            text-align: center;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #eee;
+        }
+        .profile-img {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            border: 3px solid #06c755;
+            object-fit: cover;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        input[type="text"], input[type="tel"], textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-size: 16px;
+        }
+        textarea {
+            resize: vertical;
+            height: 100px;
+        }
+        button {
+            width: 100%;
+            padding: 14px;
+            background-color: #06c755; /* สีเขียว LINE */
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        button:hover {
+            background-color: #05b04b;
+        }
+        .loading {
+            text-align: center;
+            font-size: 16px;
+            color: #666;
+            padding: 40px 0;
+        }
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+<div class="form-container">
+    <!-- หน้าจอโหลดข้อมูลตอนเริ่ม -->
+    <div id="loading" class="loading">กำลังโหลดข้อมูล LIFF...</div>
+
+    <!-- ฟอร์มกรอกข้อมูล -->
+    <div id="formContent" class="hidden">
+        <div class="profile-section">
+            <img id="pictureUrl" class="profile-img" src="" alt="Profile Picture">
+            <h3 id="displayName" style="margin: 10px 0 5px 0;">คุณ LINE User</h3>
+            <p id="userId" style="font-size: 12px; color: #888; margin: 0;"></p>
+        </div>
+
+        <form id="liffForm">
+            <!-- บล็อกเก็บค่า User ID ไว้ส่งไปพร้อมฟอร์ม -->
+            <input type="hidden" id="hiddenUserId" name="userId">
+
+            <div class="form-group">
+                <label for="fullName">ชื่อ-นามสกุล</label>
+                <input type="text" id="fullName" required placeholder="กรอกชื่อและนามสกุลของคุณ">
+            </div>
+
+            <div class="form-group">
+                <label for="phoneNumber">เบอร์โทรศัพท์</label>
+                <input type="tel" id="phoneNumber" required placeholder="เช่น 0891234567">
+            </div>
+
+            <div class="form-group">
+                <label for="note">หมายเหตุ / ข้อมูลเพิ่มเติม</label>
+                <textarea id="note" placeholder="กรอกข้อมูลเพิ่มเติม (ถ้ามี)"></textarea>
+            </div>
+
+            <button type="submit">ส่งข้อมูลเข้า LINE Chat</button>
+        </form>
+    </div>
+</div>
+
+<script>
+    // ⚠️ อย่าลืมนำข้อมูล LIFF ID จาก LINE Developers มาใส่ในช่องว่างด้านล่างนี้นะครับ
+    const MY_LIFF_ID = 'YOUR_LIFF_ID_HERE'; 
+
+    async function initLiff() {
+        try {
+            // เริ่มต้นการใช้งาน LIFF
+            await liff.init({ liffId: MY_LIFF_ID });
+            
+            // ตรวจสอบว่าผู้ใช้ล็อกอินหรือยัง ถ้ายังให้พาไปล็อกอิน
+            if (!liff.isLoggedIn()) {
+                liff.login();
+                return;
+            }
+
+            // ดึงข้อมูลโปรไฟล์ผู้ใช้
+            const profile = await liff.getProfile();
+            
+            // แสดงข้อมูลบนหน้าเว็บ
+            // ⚠️ จุดแก้ไขที่ 2: ลิงก์รูปภาพสำรองหากดึงภาพโปรไฟล์ไม่สำเร็จ
+            document.getElementById('pictureUrl').src = profile.pictureUrl || 'https://placeholder.com';
+            document.getElementById('displayName').textContent = profile.displayName;
+            document.getElementById('userId').textContent = `ID: ${profile.userId}`;
+            document.getElementById('hiddenUserId').value = profile.userId;
+
+            // ซ่อนตัวโหลด และแสดงฟอร์ม
+            document.getElementById('loading').classList.add('hidden');
+            document.getElementById('formContent').classList.remove('hidden');
+
+        } catch (error) {
+            console.error('LIFF Initialization failed', error);
+            document.getElementById('loading').textContent = 'เกิดข้อผิดพลาดในการเชื่อมต่อกับ LINE';
+        }
+    }
+
+    // จัดการตอนกดส่งฟอร์ม
+    document.getElementById('liffForm').addEventListener('submit', function(e) {
+        e.preventDefault(); // ป้องกันการรีเฟรชหน้าจอ
+
+        // ดึงค่าจากฟอร์ม
+        const fullName = document.getElementById('fullName').value;
+        const phoneNumber = document.getElementById('phoneNumber').value;
+        const note = document.getElementById('note').value || 'ไม่มี';
+
+        // สร้างข้อความที่จะส่งกลับเข้าไปในแชท LINE
+        const messageText = `📝 มีการส่งข้อมูลฟอร์มใหม่\n\n👤 ชื่อ: ${fullName}\n📞 เบอร์โทร: ${phoneNumber}\n📌 หมายเหตุ: ${note}`;
+
+        // ส่งข้อความกลับเข้าแชท (ฟีเจอร์ sendMessages ทำงานได้เมื่อเปิด LIFF ในแอป LINE เท่านั้น)
+        if (liff.isInClient()) {
+            liff.sendMessages([{
+                type: 'text',
+                text: messageText
+            }]).then(() => {
+                alert('บันทึกและส่งข้อมูลสำเร็จแล้ว!');
+                liff.closeWindow(); // ปิดหน้าต่าง LIFF ทันที
+            }).catch((err) => {
+                console.error('Error sending message:', err);
+                alert('ไม่สามารถส่งข้อความเข้าแชทได้ กรุณาลองใหม่อีกครั้ง');
+            });
+        } else {
+            // กรณีเปิดทดสอบบนเบราว์เซอร์ปกติภายนอกแอป LINE
+            alert(`[Browser Mode] บันทึกข้อมูลสำเร็จ!\n\n${messageText}`);
+        }
+    });
+
+    // เรียกใช้งานฟังก์ชันเริ่มต้นเมื่อโหลดหน้าเว็บ
+    window.onload = initLiff;
+</script>
+
+</body>
+</html>
